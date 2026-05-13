@@ -1,0 +1,147 @@
+export const WORKSPACES = [
+  { id: "overview", label: "Overview", icon: "LayoutDashboard" },
+  { id: "clients", label: "Clients", icon: "Users" },
+  { id: "rooms", label: "Video Rooms", icon: "Video" },
+  { id: "events", label: "Events", icon: "Calendar" },
+  { id: "finance", label: "Finance", icon: "DollarSign" },
+  { id: "website", label: "Website", icon: "Globe" },
+  { id: "inventory", label: "Inventory", icon: "Package" },
+  { id: "ops", label: "Ops Hub", icon: "Settings" },
+  { id: "strategy", label: "Strategy", icon: "Target" },
+  { id: "messages", label: "Messages", icon: "MessageSquare" },
+  { id: "notes", label: "Notes", icon: "FileText" },
+  { id: "media", label: "Media", icon: "Image" },
+  { id: "command", label: "Live Command", icon: "Zap" },
+] as const;
+
+export type WorkspaceId = (typeof WORKSPACES)[number]["id"];
+
+export const ROOM_TEMPLATES = [
+  {
+    id: "discovery-call",
+    name: "Discovery Call",
+    duration: 45,
+    icon: "Search",
+    agenda: [
+      "Introductions & rapport building",
+      "Understand event vision & goals",
+      "Discuss budget range & guest count",
+      "Review available dates & venues",
+      "Next steps & follow-up plan",
+    ],
+    prep: "Review inquiry form, prepare availability calendar",
+    tools: ["Notes", "Calendar"],
+  },
+  {
+    id: "design-review",
+    name: "Design Review",
+    duration: 60,
+    icon: "Palette",
+    agenda: [
+      "Review mood board & color palette",
+      "Floor plan walkthrough",
+      "Table settings & centerpiece options",
+      "Lighting & ambiance discussion",
+      "Vendor visual samples",
+      "Client approvals",
+    ],
+    prep: "Update mood board, prepare floor plan draft",
+    tools: ["Mood Board", "Floor Plan", "Approvals"],
+  },
+  {
+    id: "final-walkthrough",
+    name: "Final Walkthrough",
+    duration: 90,
+    icon: "CheckSquare",
+    agenda: [
+      "Complete timeline review",
+      "Vendor confirmations & contacts",
+      "Floor plan final approval",
+      "Emergency protocols review",
+      "Day-of communication plan",
+      "Final questions & concerns",
+      "Sign-off on all details",
+    ],
+    prep: "Finalize all vendor contracts, complete timeline, print emergency contacts",
+    tools: ["Floor Plan", "Approvals", "Checklist", "Contacts"],
+  },
+  {
+    id: "vendor-meet",
+    name: "Vendor Meet",
+    duration: 30,
+    icon: "Handshake",
+    agenda: [
+      "Vendor introduction to client",
+      "Service overview & pricing",
+      "Portfolio review",
+      "Q&A",
+    ],
+    prep: "Brief vendor on client preferences, prepare comparison sheet",
+    tools: ["Notes", "Approvals"],
+  },
+  {
+    id: "day-of-briefing",
+    name: "Day-Of Briefing",
+    duration: 20,
+    icon: "Clock",
+    agenda: [
+      "Timeline quick review",
+      "Staff assignments confirmed",
+      "Weather & contingency check",
+      "Final vendor check-in",
+    ],
+    prep: "Print timeline cards, charge all devices, test walkie-talkies",
+    tools: ["Checklist", "Contacts"],
+  },
+] as const;
+
+export const DEMO_ROOMS = [
+  {
+    id: "room-1",
+    client: "Amara Whitfield",
+    event: "Whitfield Wedding — Jun 14",
+    lastActivity: "2 hours ago",
+    unread: 3,
+    avatarUrl: "https://randomuser.me/api/portraits/women/44.jpg",
+  },
+  {
+    id: "room-2",
+    client: "Priya Nair",
+    event: "Nair Brand Launch — May 2",
+    lastActivity: "Yesterday",
+    unread: 0,
+    avatarUrl: "https://randomuser.me/api/portraits/women/63.jpg",
+  },
+  {
+    id: "room-3",
+    client: "Celeste Fontaine",
+    event: "Fontaine Gala — Aug 22",
+    lastActivity: "3 days ago",
+    unread: 1,
+    avatarUrl: "https://randomuser.me/api/portraits/women/68.jpg",
+  },
+  {
+    id: "room-4",
+    client: "Devon & Marcus",
+    event: "Johnson Anniversary — Sep 5",
+    lastActivity: "1 week ago",
+    unread: 0,
+    avatarUrl: "https://randomuser.me/api/portraits/men/32.jpg",
+  },
+  {
+    id: "room-5",
+    client: "Sage Mitchell",
+    event: "Mitchell Gala — Oct 18",
+    lastActivity: "2 weeks ago",
+    unread: 0,
+    avatarUrl: "https://randomuser.me/api/portraits/women/21.jpg",
+  },
+];
+
+export const DEMO_CLIENTS = [
+  { id: 1, name: "Amara Whitfield", event: "Whitfield Wedding", date: "Jun 14", status: "Active", budget: 85000, spent: 62000, guests: 220, avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
+  { id: 2, name: "Priya Nair", event: "Nair Brand Launch", date: "May 2", status: "Active", budget: 45000, spent: 38000, guests: 150, avatar: "https://randomuser.me/api/portraits/women/63.jpg" },
+  { id: 3, name: "Celeste Fontaine", event: "Fontaine Gala", date: "Aug 22", status: "Planning", budget: 120000, spent: 45000, guests: 300, avatar: "https://randomuser.me/api/portraits/women/68.jpg" },
+  { id: 4, name: "Devon Whitfield", event: "Johnson Anniversary", date: "Sep 5", status: "Inquiry", budget: 25000, spent: 0, guests: 80, avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
+  { id: 5, name: "Sage Mitchell", event: "Mitchell Gala", date: "Oct 18", status: "Proposal", budget: 95000, spent: 0, guests: 250, avatar: "https://randomuser.me/api/portraits/women/21.jpg" },
+];

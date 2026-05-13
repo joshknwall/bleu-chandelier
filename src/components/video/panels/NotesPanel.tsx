@@ -2,17 +2,38 @@
 
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
+import { useNotes } from "@/hooks/useNotes";
 
-export default function NotesPanel() {
-  const [notes, setNotes] = useState("");
-
+function NotesLayout({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (text: string) => void;
+}) {
   return (
-    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12, height: "100%", overflowY: "auto" }}>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(189,212,228,0.5)" }}>
+    <div
+      style={{
+        padding: 16,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        height: "100%",
+        overflowY: "auto",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "rgba(189,212,228,0.5)",
+        }}
+      >
         Host Notes
       </div>
 
-      {/* Warning */}
       <div
         style={{
           display: "flex",
@@ -30,10 +51,9 @@ export default function NotesPanel() {
         </span>
       </div>
 
-      {/* Textarea */}
       <textarea
-        value={notes}
-        onChange={e => setNotes(e.target.value)}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         placeholder="Private notes for this session…"
         style={{
           flex: 1,
@@ -52,8 +72,23 @@ export default function NotesPanel() {
       />
 
       <div style={{ fontSize: 11, color: "rgba(189,212,228,0.3)", textAlign: "right" }}>
-        {notes.length} chars
+        {value.length} chars
       </div>
     </div>
   );
+}
+
+function LiveNotesPanel({ sessionId }: { sessionId: string }) {
+  const { content, updateContent } = useNotes(sessionId);
+  return <NotesLayout value={content} onChange={updateContent} />;
+}
+
+function DemoNotesPanel() {
+  const [notes, setNotes] = useState("");
+  return <NotesLayout value={notes} onChange={setNotes} />;
+}
+
+export default function NotesPanel({ sessionId }: { sessionId?: string }) {
+  if (sessionId) return <LiveNotesPanel sessionId={sessionId} />;
+  return <DemoNotesPanel />;
 }

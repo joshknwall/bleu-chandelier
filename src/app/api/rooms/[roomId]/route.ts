@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
     const { data, error } = await supabase
       .from("rooms")
-      .select("*")
+      .select("*, clients(name, avatar_url), room_templates(name, duration_min, agenda_items)")
       .eq("id", roomId)
       .single();
 
@@ -39,7 +39,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
 
     const body = await req.json();
-    const allowed = ["client_name", "event_name", "template_id", "status", "agenda"];
+    const allowed = ["template_id", "status", "setup", "pinned"];
     const updates: Record<string, unknown> = {};
     for (const key of allowed) {
       if (key in body) updates[key] = body[key];

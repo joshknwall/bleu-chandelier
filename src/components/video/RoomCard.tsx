@@ -4,47 +4,35 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getInitials } from "@/lib/utils";
 
-interface Room {
+export interface RoomRow {
   id: string;
-  client: string;
-  event: string;
-  lastActivity: string;
-  unread: number;
-  avatarUrl?: string;
+  livekit_room: string | null;
+  status: string;
+  created_at: string;
+  template_id: string | null;
+  clients: { name: string; avatar_url: string | null } | null;
 }
 
-export default function RoomCard({ room }: { room: Room }) {
+export default function RoomCard({ room }: { room: RoomRow }) {
   const router = useRouter();
+  const clientName = room.clients?.name ?? "Unknown Client";
+  const avatarUrl = room.clients?.avatar_url ?? null;
 
   return (
     <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: 16, position: "relative" }}>
-      {/* Status + unread */}
+      {/* Status */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span className="pill pill-green">Active</span>
-        {room.unread > 0 && (
-          <span
-            style={{
-              background: "var(--red)",
-              color: "#fff",
-              borderRadius: "999px",
-              fontSize: 11,
-              fontWeight: 700,
-              padding: "2px 8px",
-              minWidth: 20,
-              textAlign: "center",
-            }}
-          >
-            {room.unread}
-          </span>
-        )}
+        <span className={`pill ${room.status === "active" ? "pill-green" : "pill-amber"}`}>
+          {room.status.charAt(0).toUpperCase() + room.status.slice(1)}
+        </span>
       </div>
 
       {/* Avatar + info */}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        {room.avatarUrl ? (
+        {avatarUrl ? (
           <Image
-            src={room.avatarUrl}
-            alt={room.client}
+            src={avatarUrl}
+            alt={clientName}
             width={48}
             height={48}
             style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
@@ -66,22 +54,24 @@ export default function RoomCard({ room }: { room: Room }) {
               flexShrink: 0,
             }}
           >
-            {getInitials(room.client)}
+            {getInitials(clientName)}
           </div>
         )}
         <div style={{ minWidth: 0 }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {room.client}
+            {clientName}
           </div>
-          <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {room.event}
-          </div>
+          {room.template_id && (
+            <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {room.template_id.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Last activity */}
+      {/* Created date */}
       <div style={{ fontSize: 11, color: "var(--ink-muted)", letterSpacing: "0.03em" }}>
-        Last active: {room.lastActivity}
+        Created: {new Date(room.created_at).toLocaleDateString()}
       </div>
 
       {/* Enter button */}

@@ -1,18 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Video, Plus } from "lucide-react";
-import { DEMO_ROOMS, ROOM_TEMPLATES } from "@/lib/constants";
+import { ROOM_TEMPLATES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import RoomCard from "@/components/video/RoomCard";
 import TemplateCard from "@/components/video/TemplateCard";
 import CreateRoomModal from "@/components/video/CreateRoomModal";
+import type { RoomRow } from "@/components/video/RoomCard";
 
 type Tab = "active" | "templates";
 
 export default function RoomsPage() {
   const [tab, setTab] = useState<Tab>("active");
   const [modalOpen, setModalOpen] = useState(false);
+  const [rooms, setRooms] = useState<RoomRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRooms = useCallback(async () => {
+    try {
+      const res = await fetch("/api/rooms");
+      if (res.ok) {
+        const { rooms: data } = await res.json();
+        setRooms(data ?? []);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRooms();
+  }, [fetchRooms]);
 
   const tabStyle = (t: Tab): React.CSSProperties => ({
     padding: "8px 20px",
@@ -99,7 +118,7 @@ export default function RoomsPage() {
         }}
       >
         <button style={tabStyle("active")} onClick={() => setTab("active")}>
-          Active ({DEMO_ROOMS.length})
+          Active ({rooms.length})
         </button>
         <button style={tabStyle("templates")} onClick={() => setTab("templates")}>
           Templates ({ROOM_TEMPLATES.length})
@@ -115,9 +134,17 @@ export default function RoomsPage() {
             gap: 20,
           }}
         >
-          {DEMO_ROOMS.map(room => (
-            <RoomCard key={room.id} room={room} />
-          ))}
+          {loading ? (
+            <div style={{ fontSize: 13, color: "var(--ink-muted)", padding: "20px 0" }}>Loading rooms...</div>
+          ) : rooms.length === 0 ? (
+            <div style={{ fontSize: 13, color: "var(--ink-muted)", padding: "20px 0" }}>
+              No rooms yet. Create one to get started.
+            </div>
+          ) : (
+            rooms.map(room => (
+              <RoomCard key={room.id} room={room} />
+            ))
+          )}
         </div>
       )}
 
@@ -135,7 +162,14 @@ export default function RoomsPage() {
         </div>
       )}
 
-      <CreateRoomModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <CreateRoomModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCreated={() => {
+          setModalOpen(false);
+          fetchRooms();
+        }}
+      />
     </div>
   );
 }

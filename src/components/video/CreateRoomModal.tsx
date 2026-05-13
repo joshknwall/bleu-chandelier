@@ -2,23 +2,53 @@
 
 import { useState } from "react";
 import { X } from "lucide-react";
-import { DEMO_CLIENTS, ROOM_TEMPLATES } from "@/lib/constants";
+import { ROOM_TEMPLATES } from "@/lib/constants";
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  onCreated: () => void;
 }
 
-export default function CreateRoomModal({ open, onClose }: Props) {
-  const [clientId, setClientId] = useState("");
+export default function CreateRoomModal({ open, onClose, onCreated }: Props) {
+  const [clientName, setClientName] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [agenda, setAgenda] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!open) return null;
 
-  const handleCreate = () => {
-    // API wiring comes later — just close for now
-    onClose();
+  const handleCreate = async () => {
+    if (!clientName.trim()) {
+      setError("Client name is required");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/rooms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientName: clientName.trim(),
+          templateId: templateId || null,
+          customAgenda: agenda.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to create room");
+      }
+      setClientName("");
+      setTemplateId("");
+      setAgenda("");
+      onCreated();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create room");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fieldStyle: React.CSSProperties = {
@@ -31,6 +61,7 @@ export default function CreateRoomModal({ open, onClose }: Props) {
     fontSize: 13,
     fontFamily: "var(--font-b)",
     outline: "none",
+    boxSizing: "border-box",
   };
 
   const labelStyle: React.CSSProperties = {
@@ -102,19 +133,16 @@ export default function CreateRoomModal({ open, onClose }: Props) {
 
           {/* Form */}
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {/* Client select */}
+            {/* Client name input */}
             <div>
-              <label style={labelStyle}>Client</label>
-              <select
-                value={clientId}
-                onChange={e => setClientId(e.target.value)}
+              <label style={labelStyle}>Client Name</label>
+              <input
+                type="text"
+                value={clientName}
+                onChange={e => setClientName(e.target.value)}
+                placeholder="e.g. Amara Whitfield"
                 style={fieldStyle}
-              >
-                <option value="">Select a client…</option>
-                {DEMO_CLIENTS.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} — {c.event}</option>
-                ))}
-              </select>
+              />
             </div>
 
             {/* Template select */}
@@ -143,6 +171,10 @@ export default function CreateRoomModal({ open, onClose }: Props) {
                 style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.6 }}
               />
             </div>
+
+            {error && (
+              <div style={{ fontSize: 12, color: "var(--red)", marginTop: -8 }}>{error}</div>
+            )}
           </div>
 
           {/* Actions */}
@@ -165,6 +197,7 @@ export default function CreateRoomModal({ open, onClose }: Props) {
             </button>
             <button
               onClick={handleCreate}
+              disabled={loading}
               style={{
                 flex: 2,
                 background: "var(--navy)",
@@ -174,11 +207,12 @@ export default function CreateRoomModal({ open, onClose }: Props) {
                 padding: "11px 0",
                 fontWeight: 700,
                 fontSize: 13,
-                cursor: "pointer",
+                cursor: loading ? "not-allowed" : "pointer",
                 letterSpacing: "0.04em",
+                opacity: loading ? 0.7 : 1,
               }}
             >
-              Create Room
+              {loading ? "Creating…" : "Create Room"}
             </button>
           </div>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import {
   LiveKitRoom,
   useTracks,
@@ -25,45 +25,58 @@ import {
   PhoneOff,
   X,
 } from "lucide-react";
-import { DEMO_ROOMS } from "@/lib/constants";
 import { getInitials } from "@/lib/utils";
 import SessionPanel from "@/components/video/SessionPanel";
 
+interface RoomData {
+  id: string;
+  livekit_room: string;
+  clients: { name: string; avatar_url: string | null } | null;
+}
+
 export default function CallPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const roomId = params.roomId as string;
-  const room = DEMO_ROOMS.find((r) => r.id === roomId) ?? DEMO_ROOMS[0];
+  const sessionId = searchParams.get("sessionId");
 
+  const [room, setRoom] = useState<RoomData | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchToken() {
+    async function fetchRoomAndToken() {
       try {
-        const res = await fetch("/api/livekit/token", {
+        const res = await fetch(`/api/rooms/${roomId}`);
+        if (!res.ok) throw new Error("Failed to fetch room");
+        const { room: data } = await res.json();
+        setRoom(data);
+
+        const livekitRoomName = data.livekit_room ?? `room-${roomId}`;
+        const tokenRes = await fetch("/api/livekit/token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            roomName: `room-${roomId}`,
+            roomName: livekitRoomName,
             participantIdentity: `host-${Date.now()}`,
             participantName: "Topaz Laurent",
             role: "host",
           }),
         });
 
-        if (!res.ok) {
-          const data = await res.json();
+        if (!tokenRes.ok) {
+          const data = await tokenRes.json();
           throw new Error(data.error || "Failed to get token");
         }
 
-        const { token } = await res.json();
+        const { token } = await tokenRes.json();
         setToken(token);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Connection failed");
       }
     }
 
-    fetchToken();
+    fetchRoomAndToken();
   }, [roomId]);
 
   const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
@@ -116,7 +129,7 @@ export default function CallPage() {
       video={true}
       onError={(err) => setError(err.message)}
     >
-      <CallUI room={room} roomId={roomId} />
+      <CallUI room={room} roomId={roomId} sessionId={sessionId} livekitRoomName={room?.livekit_room ?? `room-${roomId}`} />
     </LiveKitRoom>
   );
 }
@@ -124,9 +137,13 @@ export default function CallPage() {
 function CallUI({
   room,
   roomId,
+  sessionId,
+  livekitRoomName,
 }: {
-  room: (typeof DEMO_ROOMS)[number];
+  room: RoomData | null;
   roomId: string;
+  sessionId: string | null;
+  livekitRoomName: string;
 }) {
   const router = useRouter();
   const { localParticipant } = useLocalParticipant();
@@ -134,6 +151,7 @@ function CallUI({
   const lkRoom = useRoomContext();
 
   const [recording, setRecording] = useState(false);
+  const [egressId, setEgressId] = useState<string | null>(null);
   const [splitView, setSplitView] = useState(true);
   const [elapsed, setElapsed] = useState(0);
 
@@ -144,11 +162,8 @@ function CallUI({
   }, []);
 
   const formatTime = (s: number) =>
-    `${Math.floor(s / 60)
-      .toString()
-      .padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+    `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
-  // Get all camera + screen share tracks
   const cameraTracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: true },
@@ -175,10 +190,52 @@ function CallUI({
     await localParticipant.setScreenShareEnabled(!screenEnabled);
   }, [localParticipant, screenEnabled]);
 
+  const toggleRecording = useCallback(async () => {
+    if (!recording) {
+      try {
+        const res = await fetch("/api/livekit/egress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomName: livekitRoomName, sessionId }),
+        });
+        if (res.ok) {
+          const { egressId: id } = await res.json();
+          setEgressId(id);
+          setRecording(true);
+        }
+      } catch {
+        // silently fail — recording is non-critical
+      }
+    } else {
+      if (egressId) {
+        try {
+          await fetch("/api/livekit/egress", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ egressId, sessionId }),
+          });
+        } catch {
+          // silently fail
+        }
+      }
+      setEgressId(null);
+      setRecording(false);
+    }
+  }, [recording, egressId, livekitRoomName, sessionId]);
+
   const endCall = useCallback(async () => {
+    if (recording && egressId) {
+      await fetch("/api/livekit/egress", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ egressId, sessionId }),
+      });
+    }
     await lkRoom.disconnect();
     router.push("/rooms");
-  }, [lkRoom, router]);
+  }, [lkRoom, router, recording, egressId, sessionId]);
+
+  const clientName = room?.clients?.name ?? "Client";
 
   return (
     <div className="vc-fullscreen">
@@ -205,10 +262,7 @@ function CallUI({
               letterSpacing: "0.02em",
             }}
           >
-            {room.client}
-          </span>
-          <span style={{ fontSize: 12, color: "rgba(189,212,228,0.45)", marginLeft: 10 }}>
-            {room.event}
+            {clientName}
           </span>
           <span style={{ fontSize: 12, color: "rgba(189,212,228,0.3)", marginLeft: 10 }}>
             {formatTime(elapsed)}
@@ -361,13 +415,13 @@ function CallUI({
 
         {/* Audio tracks (hidden) */}
         {audioTracks.map((trackRef) =>
-          !trackRef.participant.isLocal ? (
-            <AudioTrack key={trackRef.participant.identity} trackRef={trackRef} />
+          !trackRef.participant.isLocal && trackRef.publication ? (
+            <AudioTrack key={trackRef.participant.identity} trackRef={trackRef as import("@livekit/components-react").TrackReference} />
           ) : null
         )}
 
         {/* Session panel */}
-        {splitView && <SessionPanel />}
+        {splitView && <SessionPanel sessionId={sessionId ?? undefined} />}
       </div>
 
       {/* Toolbar */}
@@ -400,7 +454,7 @@ function CallUI({
 
         <button
           className={`vc-tool${recording ? " active" : ""}`}
-          onClick={() => setRecording((r) => !r)}
+          onClick={toggleRecording}
           title={recording ? "Stop recording" : "Start recording"}
           style={{ background: recording ? "var(--red)" : undefined }}
         >

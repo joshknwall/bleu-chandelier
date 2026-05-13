@@ -5,8 +5,19 @@ import { useRouter, useParams } from "next/navigation";
 import { usePreviewTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { Mic, MicOff, Camera, CameraOff, Settings } from "lucide-react";
-import { DEMO_ROOMS, ROOM_TEMPLATES } from "@/lib/constants";
 import { getInitials } from "@/lib/utils";
+
+interface RoomData {
+  id: string;
+  livekit_room: string;
+  status: string;
+  clients: { name: string; avatar_url: string | null } | null;
+  room_templates: {
+    name: string;
+    duration_min: number;
+    agenda_items: string[];
+  } | null;
+}
 
 export default function LobbyPage() {
   const router = useRouter();
@@ -15,10 +26,20 @@ export default function LobbyPage() {
 
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
+  const [room, setRoom] = useState<RoomData | null>(null);
+  const [joining, setJoining] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const room = DEMO_ROOMS.find((r) => r.id === roomId) ?? DEMO_ROOMS[0];
-  const template = ROOM_TEMPLATES[0];
+  useEffect(() => {
+    async function fetchRoom() {
+      const res = await fetch(`/api/rooms/${roomId}`);
+      if (res.ok) {
+        const { room: data } = await res.json();
+        setRoom(data);
+      }
+    }
+    fetchRoom();
+  }, [roomId]);
 
   // Preview tracks for camera/mic before joining
   const tracks = usePreviewTracks(
@@ -39,6 +60,25 @@ export default function LobbyPage() {
       };
     }
   }, [videoTrack]);
+
+  const handleJoin = async () => {
+    setJoining(true);
+    try {
+      const res = await fetch(`/api/rooms/${roomId}/sessions`, { method: "POST" });
+      if (res.ok) {
+        const { session } = await res.json();
+        router.push(`/rooms/${roomId}/call?sessionId=${session.id}`);
+      } else {
+        // Fall back to joining without a session record
+        router.push(`/rooms/${roomId}/call`);
+      }
+    } catch {
+      router.push(`/rooms/${roomId}/call`);
+    }
+  };
+
+  const clientName = room?.clients?.name ?? "Loading...";
+  const template = room?.room_templates ?? null;
 
   return (
     <div className="vr-lobby">
@@ -195,9 +235,13 @@ export default function LobbyPage() {
             marginBottom: 6,
           }}
         >
-          {room.client}
+          {clientName}
         </h2>
-        <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 4 }}>{room.event}</div>
+        {template && (
+          <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 4 }}>
+            {template.name} — {template.duration_min} min
+          </div>
+        )}
         <div
           style={{
             display: "inline-flex",
@@ -226,57 +270,60 @@ export default function LobbyPage() {
       </div>
 
       {/* Session agenda */}
-      <div className="glass-card" style={{ width: "100%", maxWidth: 420, marginBottom: 28 }}>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "var(--ink-muted)",
-            marginBottom: 12,
-          }}
-        >
-          Session Agenda — {template.name} ({template.duration} min)
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {template.agenda.map((item, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 10,
-                fontSize: 13,
-                color: "var(--ink-soft)",
-              }}
-            >
-              <span
+      {template && (
+        <div className="glass-card" style={{ width: "100%", maxWidth: 420, marginBottom: 28 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--ink-muted)",
+              marginBottom: 12,
+            }}
+          >
+            Session Agenda — {template.name} ({template.duration_min} min)
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {template.agenda_items.map((item, i) => (
+              <div
+                key={i}
                 style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: "50%",
-                  background: "var(--gold-soft)",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "var(--gold)",
-                  flexShrink: 0,
+                  alignItems: "flex-start",
+                  gap: 10,
+                  fontSize: 13,
+                  color: "var(--ink-soft)",
                 }}
               >
-                {i + 1}
-              </span>
-              {item}
-            </div>
-          ))}
+                <span
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: "50%",
+                    background: "var(--gold-soft)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--gold)",
+                    flexShrink: 0,
+                  }}
+                >
+                  {i + 1}
+                </span>
+                {item}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Join button */}
       <button
-        onClick={() => router.push(`/rooms/${roomId}/call`)}
+        onClick={handleJoin}
+        disabled={joining}
         style={{
           background: "var(--green)",
           color: "#fff",
@@ -285,25 +332,28 @@ export default function LobbyPage() {
           padding: "14px 40px",
           fontWeight: 700,
           fontSize: 15,
-          cursor: "pointer",
+          cursor: joining ? "not-allowed" : "pointer",
           letterSpacing: "0.05em",
           display: "flex",
           alignItems: "center",
           gap: 10,
           boxShadow: "0 8px 24px rgba(16,185,129,0.3)",
           transition: "all 0.18s",
+          opacity: joining ? 0.7 : 1,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "translateY(-2px)";
-          e.currentTarget.style.boxShadow = "0 12px 32px rgba(16,185,129,0.4)";
+          if (!joining) {
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 12px 32px rgba(16,185,129,0.4)";
+          }
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = "translateY(0)";
           e.currentTarget.style.boxShadow = "0 8px 24px rgba(16,185,129,0.3)";
         }}
       >
-        Join Room
-        <span style={{ fontSize: 18 }}>→</span>
+        {joining ? "Joining..." : "Join Room"}
+        {!joining && <span style={{ fontSize: 18 }}>→</span>}
       </button>
     </div>
   );

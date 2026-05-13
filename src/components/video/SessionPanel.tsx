@@ -20,7 +20,11 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "notes", label: "Notes" },
 ];
 
-export default function SessionPanel() {
+interface SessionPanelProps {
+  sessionId?: string;
+}
+
+export default function SessionPanel({ sessionId }: SessionPanelProps) {
   const [active, setActive] = useState<Tab>("agenda");
 
   return (
@@ -47,12 +51,13 @@ export default function SessionPanel() {
 
       {/* Panel content */}
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {active === "agenda" && <AgendaPanel />}
-        {active === "decisions" && <DecisionsPanel />}
-        {active === "approvals" && <ApprovalsPanel />}
+        {active === "agenda" && <AgendaPanel sessionId={sessionId} />}
+        {active === "decisions" && <DecisionsPanel sessionId={sessionId} />}
+        {active === "approvals" && <ApprovalsPanel sessionId={sessionId} />}
         {active === "floorplan" && <FloorPlanPanel />}
         {active === "tools" && <ToolsPanel />}
-        {active === "notes" && <NotesPanel />}
+
+        {active === "notes" && <NotesPanel sessionId={sessionId} />}
       </div>
     </div>
   );

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { usePreviewTracks } from "@livekit/components-react";
+import { Track } from "livekit-client";
 import { Mic, MicOff, Camera, CameraOff, Settings } from "lucide-react";
 import { DEMO_ROOMS, ROOM_TEMPLATES } from "@/lib/constants";
 import { getInitials } from "@/lib/utils";
@@ -13,16 +15,50 @@ export default function LobbyPage() {
 
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Find matching room from demo data
-  const room = DEMO_ROOMS.find(r => r.id === roomId) ?? DEMO_ROOMS[0];
-  const template = ROOM_TEMPLATES[0]; // default to first template
+  const room = DEMO_ROOMS.find((r) => r.id === roomId) ?? DEMO_ROOMS[0];
+  const template = ROOM_TEMPLATES[0];
+
+  // Preview tracks for camera/mic before joining
+  const tracks = usePreviewTracks(
+    {
+      audio: micOn ? { deviceId: "default" } : false,
+      video: camOn ? { deviceId: "default", resolution: { width: 640, height: 400 } } : false,
+    },
+    (error) => console.warn("Preview track error:", error)
+  );
+
+  const videoTrack = tracks?.find((t) => t.kind === Track.Kind.Video);
+
+  useEffect(() => {
+    if (videoRef.current && videoTrack) {
+      videoTrack.attach(videoRef.current);
+      return () => {
+        videoTrack.detach();
+      };
+    }
+  }, [videoTrack]);
 
   return (
     <div className="vr-lobby">
       {/* Camera preview */}
       <div className="vr-lobby-preview">
-        {camOn ? (
+        {camOn && videoTrack ? (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              borderRadius: "var(--r-xl)",
+              transform: "scaleX(-1)",
+            }}
+          />
+        ) : camOn ? (
           <div style={{ textAlign: "center" }}>
             <div
               style={{
@@ -39,10 +75,10 @@ export default function LobbyPage() {
                 color: "#fff",
               }}
             >
-              {getInitials("Isabelle Laurent")}
+              {getInitials("Topaz Laurent")}
             </div>
             <div style={{ fontSize: 12, color: "rgba(189,212,228,0.6)", letterSpacing: "0.06em" }}>
-              Camera Preview
+              Starting camera...
             </div>
           </div>
         ) : (
@@ -51,12 +87,45 @@ export default function LobbyPage() {
             <div style={{ fontSize: 12 }}>Camera off</div>
           </div>
         )}
+        {/* Status badges */}
+        <div
+          style={{
+            position: "absolute",
+            top: 12,
+            left: 12,
+            background: "rgba(0,0,0,0.4)",
+            color: "#fff",
+            padding: "4px 10px",
+            borderRadius: "999px",
+            fontSize: 11,
+            fontWeight: 600,
+          }}
+        >
+          Camera Preview
+        </div>
+        {videoTrack && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 12,
+              right: 12,
+              background: "rgba(16,185,129,0.8)",
+              color: "#fff",
+              padding: "3px 8px",
+              borderRadius: "999px",
+              fontSize: 10,
+              fontWeight: 700,
+            }}
+          >
+            ● Connected
+          </div>
+        )}
       </div>
 
       {/* Device toggles */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
         <button
-          onClick={() => setMicOn(m => !m)}
+          onClick={() => setMicOn((m) => !m)}
           style={{
             width: 48,
             height: 48,
@@ -76,7 +145,7 @@ export default function LobbyPage() {
           {micOn ? <Mic size={20} /> : <MicOff size={20} />}
         </button>
         <button
-          onClick={() => setCamOn(c => !c)}
+          onClick={() => setCamOn((c) => !c)}
           style={{
             width: 48,
             height: 48,
@@ -152,15 +221,12 @@ export default function LobbyPage() {
               animation: "pulse 2s infinite",
             }}
           />
-          Waiting for participants…
+          Waiting for participants...
         </div>
       </div>
 
       {/* Session agenda */}
-      <div
-        className="glass-card"
-        style={{ width: "100%", maxWidth: 420, marginBottom: 28 }}
-      >
+      <div className="glass-card" style={{ width: "100%", maxWidth: 420, marginBottom: 28 }}>
         <div
           style={{
             fontSize: 11,
@@ -227,11 +293,11 @@ export default function LobbyPage() {
           boxShadow: "0 8px 24px rgba(16,185,129,0.3)",
           transition: "all 0.18s",
         }}
-        onMouseEnter={e => {
+        onMouseEnter={(e) => {
           e.currentTarget.style.transform = "translateY(-2px)";
           e.currentTarget.style.boxShadow = "0 12px 32px rgba(16,185,129,0.4)";
         }}
-        onMouseLeave={e => {
+        onMouseLeave={(e) => {
           e.currentTarget.style.transform = "translateY(0)";
           e.currentTarget.style.boxShadow = "0 8px 24px rgba(16,185,129,0.3)";
         }}

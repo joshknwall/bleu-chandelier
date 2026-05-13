@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import {
+  LiveKitRoom,
+  useTracks,
+  useLocalParticipant,
+  useParticipants,
+  useRoomContext,
+  VideoTrack,
+  AudioTrack,
+} from "@livekit/components-react";
+import "@livekit/components-styles";
+import { Track, RoomEvent } from "livekit-client";
 import {
   Mic,
   MicOff,
   Camera,
   CameraOff,
   ScreenShare,
+  ScreenShareOff,
   Circle,
   Columns,
   PhoneOff,
@@ -17,23 +29,156 @@ import { DEMO_ROOMS } from "@/lib/constants";
 import { getInitials } from "@/lib/utils";
 import SessionPanel from "@/components/video/SessionPanel";
 
-const PLACEHOLDER_PARTICIPANTS = [
-  { id: "host", name: "Isabelle Laurent", role: "Host" },
-  { id: "client", name: "Amara Whitfield", role: "Client" },
-];
-
 export default function CallPage() {
-  const router = useRouter();
   const params = useParams();
   const roomId = params.roomId as string;
+  const room = DEMO_ROOMS.find((r) => r.id === roomId) ?? DEMO_ROOMS[0];
 
-  const [micOn, setMicOn] = useState(true);
-  const [camOn, setCamOn] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchToken() {
+      try {
+        const res = await fetch("/api/livekit/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomName: `room-${roomId}`,
+            participantIdentity: `host-${Date.now()}`,
+            participantName: "Topaz Laurent",
+            role: "host",
+          }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "Failed to get token");
+        }
+
+        const { token } = await res.json();
+        setToken(token);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Connection failed");
+      }
+    }
+
+    fetchToken();
+  }, [roomId]);
+
+  const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
+
+  if (error) {
+    return (
+      <div className="vc-fullscreen" style={{ alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center", color: "#fff" }}>
+          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>Connection Error</div>
+          <div style={{ fontSize: 14, color: "rgba(189,212,228,0.6)", marginBottom: 20 }}>{error}</div>
+          <a
+            href={`/rooms/${roomId}/lobby`}
+            style={{ color: "var(--gold)", fontSize: 14, textDecoration: "underline" }}
+          >
+            Back to Lobby
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (!token || !livekitUrl) {
+    return (
+      <div className="vc-fullscreen" style={{ alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center", color: "#fff" }}>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              border: "3px solid rgba(189,212,228,0.2)",
+              borderTopColor: "var(--gold)",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              margin: "0 auto 16px",
+            }}
+          />
+          <div style={{ fontSize: 14, color: "rgba(189,212,228,0.6)" }}>Connecting to room...</div>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  return (
+    <LiveKitRoom
+      serverUrl={livekitUrl}
+      token={token}
+      connect={true}
+      audio={true}
+      video={true}
+      onError={(err) => setError(err.message)}
+    >
+      <CallUI room={room} roomId={roomId} />
+    </LiveKitRoom>
+  );
+}
+
+function CallUI({
+  room,
+  roomId,
+}: {
+  room: (typeof DEMO_ROOMS)[number];
+  roomId: string;
+}) {
+  const router = useRouter();
+  const { localParticipant } = useLocalParticipant();
+  const participants = useParticipants();
+  const lkRoom = useRoomContext();
+
   const [recording, setRecording] = useState(false);
-  const [sharing, setSharing] = useState(false);
   const [splitView, setSplitView] = useState(true);
+  const [elapsed, setElapsed] = useState(0);
 
-  const room = DEMO_ROOMS.find(r => r.id === roomId) ?? DEMO_ROOMS[0];
+  // Timer
+  useEffect(() => {
+    const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatTime = (s: number) =>
+    `${Math.floor(s / 60)
+      .toString()
+      .padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+
+  // Get all camera + screen share tracks
+  const cameraTracks = useTracks(
+    [
+      { source: Track.Source.Camera, withPlaceholder: true },
+      { source: Track.Source.ScreenShare, withPlaceholder: false },
+    ],
+    { updateOnlyOn: [RoomEvent.ActiveSpeakersChanged] }
+  );
+
+  const audioTracks = useTracks([{ source: Track.Source.Microphone, withPlaceholder: false }]);
+
+  const micEnabled = localParticipant.isMicrophoneEnabled;
+  const camEnabled = localParticipant.isCameraEnabled;
+  const screenEnabled = localParticipant.isScreenShareEnabled;
+
+  const toggleMic = useCallback(async () => {
+    await localParticipant.setMicrophoneEnabled(!micEnabled);
+  }, [localParticipant, micEnabled]);
+
+  const toggleCam = useCallback(async () => {
+    await localParticipant.setCameraEnabled(!camEnabled);
+  }, [localParticipant, camEnabled]);
+
+  const toggleScreen = useCallback(async () => {
+    await localParticipant.setScreenShareEnabled(!screenEnabled);
+  }, [localParticipant, screenEnabled]);
+
+  const endCall = useCallback(async () => {
+    await lkRoom.disconnect();
+    router.push("/rooms");
+  }, [lkRoom, router]);
 
   return (
     <div className="vc-fullscreen">
@@ -50,7 +195,6 @@ export default function CallPage() {
           flexShrink: 0,
         }}
       >
-        {/* Room name */}
         <div style={{ flex: 1 }}>
           <span
             style={{
@@ -66,9 +210,11 @@ export default function CallPage() {
           <span style={{ fontSize: 12, color: "rgba(189,212,228,0.45)", marginLeft: 10 }}>
             {room.event}
           </span>
+          <span style={{ fontSize: 12, color: "rgba(189,212,228,0.3)", marginLeft: 10 }}>
+            {formatTime(elapsed)}
+          </span>
         </div>
 
-        {/* REC indicator */}
         {recording && (
           <div
             style={{
@@ -97,7 +243,6 @@ export default function CallPage() {
           </div>
         )}
 
-        {/* Participant count */}
         <div
           style={{
             fontSize: 12,
@@ -107,20 +252,12 @@ export default function CallPage() {
             gap: 6,
           }}
         >
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "var(--green)",
-            }}
-          />
-          {PLACEHOLDER_PARTICIPANTS.length} participants
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--green)" }} />
+          {participants.length} participant{participants.length !== 1 ? "s" : ""}
         </div>
 
-        {/* Close */}
         <button
-          onClick={() => router.push(`/rooms/${roomId}/lobby`)}
+          onClick={endCall}
           style={{
             width: 32,
             height: 32,
@@ -147,67 +284,87 @@ export default function CallPage() {
             flex: 1,
             padding: 16,
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gridTemplateColumns: `repeat(auto-fit, minmax(${cameraTracks.length <= 2 ? "320px" : "240px"}, 1fr))`,
             gap: 12,
             alignContent: "start",
             overflowY: "auto",
           }}
         >
-          {PLACEHOLDER_PARTICIPANTS.map(p => (
-            <div key={p.id} className="vc-video-tile">
-              {/* Avatar */}
-              <div
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #1a2940, #7fa2be)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 26,
-                  fontWeight: 700,
-                  color: "#fff",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {getInitials(p.name)}
-              </div>
+          {cameraTracks.map((trackRef) => {
+            const participant = trackRef.participant;
+            const isLocal = participant.isLocal;
+            const name = participant.name || participant.identity;
 
-              {/* Name badge */}
-              <div className="vc-tile-name">
-                {p.name}
-                {p.role === "Host" && (
-                  <span
+            return (
+              <div key={`${participant.identity}-${trackRef.source}`} className="vc-video-tile">
+                {trackRef.publication?.track ? (
+                  <VideoTrack
+                    trackRef={trackRef}
                     style={{
-                      marginLeft: 6,
-                      fontSize: 9,
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "var(--r-lg)",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #1a2940, #7fa2be)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 26,
                       fontWeight: 700,
-                      background: "var(--gold)",
                       color: "#fff",
-                      padding: "1px 5px",
-                      borderRadius: "999px",
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                      verticalAlign: "middle",
                     }}
                   >
-                    Host
-                  </span>
+                    {getInitials(name)}
+                  </div>
                 )}
-              </div>
 
-              {/* Mic indicator */}
-              <div className="vc-tile-mic">
-                {p.id === "host" && !micOn ? (
-                  <MicOff size={12} style={{ color: "var(--red)" }} />
-                ) : (
-                  <Mic size={12} style={{ color: "var(--green)" }} />
-                )}
+                <div className="vc-tile-name">
+                  {name}
+                  {isLocal && (
+                    <span
+                      style={{
+                        marginLeft: 6,
+                        fontSize: 9,
+                        fontWeight: 700,
+                        background: "var(--gold)",
+                        color: "#fff",
+                        padding: "1px 5px",
+                        borderRadius: "999px",
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      You
+                    </span>
+                  )}
+                </div>
+
+                <div className="vc-tile-mic">
+                  {participant.isMicrophoneEnabled ? (
+                    <Mic size={12} style={{ color: "var(--green)" }} />
+                  ) : (
+                    <MicOff size={12} style={{ color: "var(--red)" }} />
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+
+        {/* Audio tracks (hidden) */}
+        {audioTracks.map((trackRef) =>
+          !trackRef.participant.isLocal ? (
+            <AudioTrack key={trackRef.participant.identity} trackRef={trackRef} />
+          ) : null
+        )}
 
         {/* Session panel */}
         {splitView && <SessionPanel />}
@@ -216,34 +373,34 @@ export default function CallPage() {
       {/* Toolbar */}
       <div className="vc-toolbar">
         <button
-          className={`vc-tool${!micOn ? " active" : ""}`}
-          onClick={() => setMicOn(m => !m)}
-          title={micOn ? "Mute" : "Unmute"}
-          style={{ background: !micOn ? "var(--red)" : undefined }}
+          className={`vc-tool${!micEnabled ? " active" : ""}`}
+          onClick={toggleMic}
+          title={micEnabled ? "Mute" : "Unmute"}
+          style={{ background: !micEnabled ? "var(--red)" : undefined }}
         >
-          {micOn ? <Mic size={20} /> : <MicOff size={20} />}
+          {micEnabled ? <Mic size={20} /> : <MicOff size={20} />}
         </button>
 
         <button
-          className={`vc-tool${!camOn ? " active" : ""}`}
-          onClick={() => setCamOn(c => !c)}
-          title={camOn ? "Stop camera" : "Start camera"}
-          style={{ background: !camOn ? "var(--red)" : undefined }}
+          className={`vc-tool${!camEnabled ? " active" : ""}`}
+          onClick={toggleCam}
+          title={camEnabled ? "Stop camera" : "Start camera"}
+          style={{ background: !camEnabled ? "var(--red)" : undefined }}
         >
-          {camOn ? <Camera size={20} /> : <CameraOff size={20} />}
+          {camEnabled ? <Camera size={20} /> : <CameraOff size={20} />}
         </button>
 
         <button
-          className={`vc-tool${sharing ? " active" : ""}`}
-          onClick={() => setSharing(s => !s)}
-          title="Share Screen"
+          className={`vc-tool${screenEnabled ? " active" : ""}`}
+          onClick={toggleScreen}
+          title={screenEnabled ? "Stop sharing" : "Share Screen"}
         >
-          <ScreenShare size={20} />
+          {screenEnabled ? <ScreenShareOff size={20} /> : <ScreenShare size={20} />}
         </button>
 
         <button
           className={`vc-tool${recording ? " active" : ""}`}
-          onClick={() => setRecording(r => !r)}
+          onClick={() => setRecording((r) => !r)}
           title={recording ? "Stop recording" : "Start recording"}
           style={{ background: recording ? "var(--red)" : undefined }}
         >
@@ -252,19 +409,13 @@ export default function CallPage() {
 
         <button
           className={`vc-tool${splitView ? " active" : ""}`}
-          onClick={() => setSplitView(s => !s)}
+          onClick={() => setSplitView((s) => !s)}
           title="Toggle session panel"
         >
           <Columns size={20} />
         </button>
 
-        {/* End call — danger */}
-        <button
-          className="vc-tool danger"
-          onClick={() => router.push("/rooms")}
-          title="End call"
-          style={{ marginLeft: 16 }}
-        >
+        <button className="vc-tool danger" onClick={endCall} title="End call" style={{ marginLeft: 16 }}>
           <PhoneOff size={20} />
         </button>
       </div>

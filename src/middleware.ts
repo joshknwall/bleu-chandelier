@@ -15,10 +15,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Skip auth in development or when Supabase is not configured
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NODE_ENV === "development") {
-    return NextResponse.next();
-  }
+  // Skip auth until login page is implemented
+  // TODO: Remove this bypass and enforce auth once login flow is built
+  return NextResponse.next();
 
   let response = NextResponse.next({
     request,

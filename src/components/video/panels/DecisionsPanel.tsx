@@ -4,12 +4,6 @@ import { useState } from "react";
 import { Plus, Check } from "lucide-react";
 import { useDecisions, Decision } from "@/hooks/useDecisions";
 
-const INITIAL_DECISIONS = [
-  "Champagne silk linens confirmed",
-  "Garden style arch with roses",
-  "7-piece band for reception",
-];
-
 function DecisionItem({ text }: { text: string }) {
   return (
     <div
@@ -152,8 +146,6 @@ function LiveDecisionsPanel({ sessionId }: { sessionId: string }) {
 }
 
 function DemoDecisionsPanel() {
-  const [decisions, setDecisions] = useState(INITIAL_DECISIONS);
-
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 8, overflowY: "auto" }}>
       <div
@@ -168,14 +160,16 @@ function DemoDecisionsPanel() {
       >
         Captured Decisions
       </div>
-
-      {decisions.map((d, i) => (
-        <DecisionItem key={i} text={d} />
-      ))}
-
-      <AddDecisionUI
-        onAdd={(text) => setDecisions((prev) => [...prev, text])}
-      />
+      <div
+        style={{
+          padding: "24px 16px",
+          textAlign: "center",
+          color: "rgba(189,212,228,0.4)",
+          fontSize: 12,
+        }}
+      >
+        Decisions will be captured here during sessions
+      </div>
     </div>
   );
 }

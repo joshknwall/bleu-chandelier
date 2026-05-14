@@ -1,13 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import { useApprovals, Approval, ApprovalStatus } from "@/hooks/useApprovals";
-
-const INITIAL_APPROVALS: Approval[] = [
-  { id: "1", session_id: "", label: "Seating layout", status: "pending", decided_at: null },
-  { id: "2", session_id: "", label: "Vendor selections", status: "approved", decided_at: null },
-  { id: "3", session_id: "", label: "Color palette", status: "approved", decided_at: null },
-];
 
 function ApprovalRow({
   approval,
@@ -126,14 +119,6 @@ function LiveApprovalsPanel({ sessionId }: { sessionId: string }) {
 }
 
 function DemoApprovalsPanel() {
-  const [approvals, setApprovals] = useState<Approval[]>(INITIAL_APPROVALS);
-
-  const update = (id: string, status: ApprovalStatus) => {
-    setApprovals((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status } : a))
-    );
-  };
-
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 8, overflowY: "auto" }}>
       <div
@@ -148,14 +133,16 @@ function DemoApprovalsPanel() {
       >
         Approvals
       </div>
-      {approvals.map((a) => (
-        <ApprovalRow
-          key={a.id}
-          approval={a}
-          onApprove={(id) => update(id, "approved")}
-          onDefer={(id) => update(id, "deferred")}
-        />
-      ))}
+      <div
+        style={{
+          padding: "24px 16px",
+          textAlign: "center",
+          color: "rgba(189,212,228,0.4)",
+          fontSize: 12,
+        }}
+      >
+        Approval items will appear here
+      </div>
     </div>
   );
 }

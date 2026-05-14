@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { DEMO_ROOMS } from "@/lib/constants";
 import CallTopBar from "./CallTopBar";
 import CallToolbar from "./CallToolbar";
 import VideoGrid from "./VideoGrid";
@@ -19,19 +18,16 @@ export default function VideoCall({ roomId }: VideoCallProps) {
   const [screenSharing, setScreenSharing] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
 
-  const room = DEMO_ROOMS.find((r) => r.id === roomId) ?? DEMO_ROOMS[0];
-
   const participants = [
     {
       id: "self",
-      name: "Topaz Laurent",
+      name: "You",
       isSelf: true,
       isMuted: !micOn,
     },
     {
       id: "client",
-      name: room.client,
-      avatarUrl: room.avatarUrl,
+      name: "Client",
       isMuted: false,
     },
   ];
@@ -43,8 +39,8 @@ export default function VideoCall({ roomId }: VideoCallProps) {
   return (
     <div className="vc-fullscreen">
       <CallTopBar
-        roomName={`Room — ${room.event}`}
-        clientName={room.client}
+        roomName={`Room — ${roomId}`}
+        clientName="Client"
         participantCount={participants.length}
         panelOpen={panelOpen}
         onTogglePanel={() => setPanelOpen((p) => !p)}

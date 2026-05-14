@@ -4,16 +4,6 @@ import { useState } from "react";
 import { Sparkles, Plus } from "lucide-react";
 import { useAgenda, AgendaItem } from "@/hooks/useAgenda";
 
-const AGENDA_ITEMS = [
-  "Welcome & introductions",
-  "Review event timeline",
-  "Vendor confirmations",
-  "Floor plan walkthrough",
-  "Color palette approval",
-  "Budget review",
-  "Next steps & action items",
-];
-
 const AI_SUGGESTIONS = [
   "Add contingency plan discussion",
   "Review catering dietary requirements",
@@ -226,16 +216,6 @@ function LiveAgendaPanel({ sessionId }: { sessionId: string }) {
 }
 
 function DemoAgendaPanel() {
-  const [checked, setChecked] = useState<Set<number>>(new Set());
-
-  const toggle = (i: number) => {
-    setChecked((prev) => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
-  };
-
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 8, overflowY: "auto" }}>
       <div
@@ -250,31 +230,16 @@ function DemoAgendaPanel() {
       >
         Session Agenda
       </div>
-
-      {AGENDA_ITEMS.map((item, i) => (
-        <button
-          key={i}
-          onClick={() => toggle(i)}
-          style={itemBtnStyle(checked.has(i))}
-        >
-          <div style={checkboxStyle(checked.has(i))}>
-            {checked.has(i) && <Checkmark />}
-          </div>
-          <span
-            style={{
-              fontSize: 12,
-              color: checked.has(i)
-                ? "rgba(189,212,228,0.5)"
-                : "rgba(189,212,228,0.85)",
-              textDecoration: checked.has(i) ? "line-through" : "none",
-              flex: 1,
-            }}
-          >
-            {item}
-          </span>
-        </button>
-      ))}
-
+      <div
+        style={{
+          padding: "24px 16px",
+          textAlign: "center",
+          color: "rgba(189,212,228,0.4)",
+          fontSize: 12,
+        }}
+      >
+        Start a session to track agenda items
+      </div>
       <AISuggestions />
     </div>
   );

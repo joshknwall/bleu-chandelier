@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Edit, Copy, Link, Archive, Trash2 } from "lucide-react";
 import { getInitials } from "@/lib/utils";
+import ActionMenu, { type ActionItem } from "@/components/ui/ActionMenu";
 
 export interface RoomRow {
   id: string;
@@ -13,18 +15,92 @@ export interface RoomRow {
   clients: { name: string; avatar_url: string | null } | null;
 }
 
-export default function RoomCard({ room }: { room: RoomRow }) {
+interface RoomCardProps {
+  room: RoomRow;
+  sessionCount?: number;
+  onEdit?: (room: RoomRow) => void;
+  onArchive?: (room: RoomRow) => void;
+  onDelete?: (room: RoomRow) => void;
+  selected?: boolean;
+  onSelect?: (room: RoomRow) => void;
+}
+
+export default function RoomCard({
+  room,
+  sessionCount,
+  onEdit,
+  onArchive,
+  onDelete,
+  selected,
+  onSelect,
+}: RoomCardProps) {
   const router = useRouter();
   const clientName = room.clients?.name ?? "Unknown Client";
   const avatarUrl = room.clients?.avatar_url ?? null;
 
+  const actions: ActionItem[] = [
+    {
+      label: "Edit Room",
+      icon: <Edit size={14} />,
+      onClick: () => onEdit?.(room),
+    },
+    {
+      label: "Duplicate",
+      icon: <Copy size={14} />,
+      onClick: () => {},
+    },
+    {
+      label: "Copy Invite Link",
+      icon: <Link size={14} />,
+      onClick: () => {
+        navigator.clipboard?.writeText(`${window.location.origin}/rooms/${room.id}/lobby`);
+      },
+    },
+    {
+      label: "Archive",
+      icon: <Archive size={14} />,
+      onClick: () => onArchive?.(room),
+      dividerBefore: true,
+    },
+    {
+      label: "Delete",
+      icon: <Trash2 size={14} />,
+      onClick: () => onDelete?.(room),
+      danger: true,
+    },
+  ];
+
   return (
-    <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: 16, position: "relative" }}>
-      {/* Status */}
+    <div
+      className="glass-card"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+        position: "relative",
+        outline: selected ? "2px solid var(--gold)" : undefined,
+        outlineOffset: selected ? -2 : undefined,
+      }}
+    >
+      {/* Status + kebab */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span className={`pill ${room.status === "active" ? "pill-green" : "pill-amber"}`}>
-          {room.status.charAt(0).toUpperCase() + room.status.slice(1)}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {onSelect && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={(e) => {
+                e.stopPropagation();
+                onSelect(room);
+              }}
+              style={{ cursor: "pointer" }}
+            />
+          )}
+          <span className={`pill ${room.status === "active" ? "pill-green" : "pill-amber"}`}>
+            {room.status.charAt(0).toUpperCase() + room.status.slice(1)}
+          </span>
+        </div>
+        <ActionMenu items={actions} />
       </div>
 
       {/* Avatar + info */}
@@ -69,9 +145,23 @@ export default function RoomCard({ room }: { room: RoomRow }) {
         </div>
       </div>
 
-      {/* Created date */}
-      <div style={{ fontSize: 11, color: "var(--ink-muted)", letterSpacing: "0.03em" }}>
-        Created: {new Date(room.created_at).toLocaleDateString()}
+      {/* Created date + session count */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "var(--ink-muted)", letterSpacing: "0.03em" }}>
+        <span>Created: {new Date(room.created_at).toLocaleDateString()}</span>
+        {sessionCount !== undefined && (
+          <span
+            style={{
+              background: "var(--navy)",
+              color: "#fff",
+              borderRadius: 999,
+              padding: "2px 8px",
+              fontSize: 10,
+              fontWeight: 700,
+            }}
+          >
+            {sessionCount} session{sessionCount !== 1 ? "s" : ""}
+          </span>
+        )}
       </div>
 
       {/* Enter button */}

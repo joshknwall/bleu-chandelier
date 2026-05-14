@@ -17,6 +17,7 @@ import {
   FileText,
   Image,
   Zap,
+  Wrench,
   ChevronLeft,
   ChevronRight,
   HelpCircle,
@@ -39,6 +40,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   FileText,
   Image,
   Zap,
+  Wrench,
 };
 
 export default function Sidebar() {
@@ -137,14 +139,15 @@ export default function Sidebar() {
         style={{ borderTop: "1px solid rgba(189,212,228,0.1)" }}
       >
         <div className="flex items-center gap-2 mb-2">
-          <button
-            className="nav-item flex-1"
+          <Link
+            href="/settings"
+            className={cn("nav-item flex-1", pathname === "/settings" && "active")}
             style={{ justifyContent: collapsed ? "center" : undefined }}
             title="Settings"
           >
             <Settings size={16} style={{ flexShrink: 0, opacity: 0.7 }} />
             {!collapsed && <span>Settings</span>}
-          </button>
+          </Link>
           {!collapsed && (
             <button className="nav-item" style={{ padding: "11px" }} title="Help">
               <HelpCircle size={16} style={{ opacity: 0.7 }} />

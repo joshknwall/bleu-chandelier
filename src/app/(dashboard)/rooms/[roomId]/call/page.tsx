@@ -23,8 +23,10 @@ import {
   Circle,
   Columns,
   PhoneOff,
+  LogOut,
   X,
 } from "lucide-react";
+import PostCallSummary from "@/components/video/PostCallSummary";
 import { getInitials } from "@/lib/utils";
 import SessionPanel from "@/components/video/SessionPanel";
 
@@ -59,7 +61,7 @@ export default function CallPage() {
           body: JSON.stringify({
             roomName: livekitRoomName,
             participantIdentity: `host-${Date.now()}`,
-            participantName: "Topaz Laurent",
+            participantName: "Topaz Curtis",
             role: "host",
           }),
         });
@@ -154,6 +156,7 @@ function CallUI({
   const [egressId, setEgressId] = useState<string | null>(null);
   const [splitView, setSplitView] = useState(true);
   const [elapsed, setElapsed] = useState(0);
+  const [showPostCall, setShowPostCall] = useState(false);
 
   // Timer
   useEffect(() => {
@@ -223,6 +226,11 @@ function CallUI({
     }
   }, [recording, egressId, livekitRoomName, sessionId]);
 
+  const leaveCall = useCallback(async () => {
+    await lkRoom.disconnect();
+    router.push("/rooms");
+  }, [lkRoom, router]);
+
   const endCall = useCallback(async () => {
     if (recording && egressId) {
       await fetch("/api/livekit/egress", {
@@ -232,8 +240,8 @@ function CallUI({
       });
     }
     await lkRoom.disconnect();
-    router.push("/rooms");
-  }, [lkRoom, router, recording, egressId, sessionId]);
+    setShowPostCall(true);
+  }, [lkRoom, recording, egressId, sessionId]);
 
   const clientName = room?.clients?.name ?? "Client";
 
@@ -311,7 +319,7 @@ function CallUI({
         </div>
 
         <button
-          onClick={endCall}
+          onClick={leaveCall}
           style={{
             width: 32,
             height: 32,
@@ -469,10 +477,29 @@ function CallUI({
           <Columns size={20} />
         </button>
 
-        <button className="vc-tool danger" onClick={endCall} title="End call" style={{ marginLeft: 16 }}>
+        <button
+          className="vc-tool"
+          onClick={leaveCall}
+          title="Leave call (others stay)"
+          style={{ marginLeft: 16, background: "rgba(255,255,255,0.1)" }}
+        >
+          <LogOut size={20} />
+        </button>
+
+        <button className="vc-tool danger" onClick={endCall} title="End call for everyone">
           <PhoneOff size={20} />
         </button>
       </div>
+
+      {showPostCall && (
+        <PostCallSummary
+          duration={elapsed}
+          clientName={clientName}
+          decisions={[]}
+          actionItems={[]}
+          onClose={() => router.push("/rooms")}
+        />
+      )}
     </div>
   );
 }

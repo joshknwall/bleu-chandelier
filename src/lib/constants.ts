@@ -6,12 +6,13 @@ export const WORKSPACES = [
   { id: "finance", label: "Finance", icon: "DollarSign" },
   { id: "website", label: "Website", icon: "Globe" },
   { id: "inventory", label: "Inventory", icon: "Package" },
-  { id: "ops", label: "Ops Hub", icon: "Settings" },
+  { id: "ops", label: "Ops Hub", icon: "Wrench" },
   { id: "strategy", label: "Strategy", icon: "Target" },
   { id: "messages", label: "Messages", icon: "MessageSquare" },
   { id: "notes", label: "Notes", icon: "FileText" },
   { id: "media", label: "Media", icon: "Image" },
   { id: "command", label: "Live Command", icon: "Zap" },
+  { id: "settings", label: "Settings", icon: "Settings" },
 ] as const;
 
 export type WorkspaceId = (typeof WORKSPACES)[number]["id"];

@@ -12,7 +12,6 @@ export const WORKSPACES = [
   { id: "notes", label: "Notes", icon: "FileText" },
   { id: "media", label: "Media", icon: "Image" },
   { id: "command", label: "Live Command", icon: "Zap" },
-  { id: "settings", label: "Settings", icon: "Settings" },
 ] as const;
 
 export type WorkspaceId = (typeof WORKSPACES)[number]["id"];

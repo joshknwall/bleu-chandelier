@@ -115,7 +115,7 @@ export default function LobbyPage() {
                 color: "#fff",
               }}
             >
-              {getInitials("Topaz Laurent")}
+              {getInitials("Topaz Curtis")}
             </div>
             <div style={{ fontSize: 12, color: "rgba(189,212,228,0.6)", letterSpacing: "0.06em" }}>
               Starting camera...

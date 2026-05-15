@@ -399,3 +399,172 @@ body {
 
 /* ═══ PULSE ANIMATION ═══ */
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ═══ RESPONSIVE CLASS DEFAULTS ═══ */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 24px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.page-content {
+  padding: 32px 36px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  width: fit-content;
+  margin-bottom: 28px;
+}
+
+/* ═══ MOBILE RESPONSIVE ═══ */
+
+/* Mobile overlay backdrop */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 19;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.sidebar-backdrop.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Hamburger button — hidden on desktop */
+.hamburger-btn {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink-soft);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── Tablet & below (≤1024px) ── */
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    height: 100vh !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 30 !important;
+    width: var(--sidebar-w) !important;
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .sidebar-backdrop { display: block; }
+  .hamburger-btn { display: flex; }
+
+  .vc-session-panel {
+    position: fixed;
+    right: 0;
+    top: 52px;
+    bottom: 64px;
+    width: 300px;
+    z-index: 25;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ── Mobile (≤640px) ── */
+@media (max-width: 640px) {
+  .topbar-user-info { display: none !important; }
+  .topbar-search { max-width: none !important; }
+  .topbar-kbd { display: none !important; }
+
+  .page-content { padding: 16px !important; }
+
+  .card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .tab-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+
+  .page-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .filter-bar > div { max-width: none !important; }
+
+  .vc-session-panel {
+    width: 100% !important;
+    left: 0;
+    right: 0;
+  }
+
+  .vc-toolbar { gap: 6px !important; }
+  .vc-tool { width: 42px; height: 42px; }
+
+  .glass-card { padding: 14px; }
+
+  .vr-lobby { padding: 20px; }
+  .vr-lobby-preview { width: 100%; max-width: 320px; }
+
+  .settings-layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .settings-tabs {
+    flex-direction: row !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap !important;
+    gap: 2px !important;
+  }
+  .settings-tabs::-webkit-scrollbar { display: none; }
+  .settings-tabs button {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}

@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Search, Bell, Sun, Moon } from "lucide-react";
+import { Search, Bell, Sun, Moon, Menu } from "lucide-react";
 import SearchOverlay from "./SearchOverlay";
 
-export default function Topbar() {
+export default function Topbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
@@ -48,8 +48,19 @@ export default function Topbar() {
           zIndex: 10,
         }}
       >
+        {/* Hamburger — mobile only */}
+        <button
+          className="hamburger-btn"
+          onClick={onMenuToggle}
+          title="Toggle menu"
+          aria-label="Toggle navigation menu"
+        >
+          <Menu size={18} />
+        </button>
+
         {/* Search trigger */}
         <button
+          className="topbar-search"
           onClick={openSearch}
           style={{
             flex: 1,
@@ -71,6 +82,7 @@ export default function Topbar() {
           <Search size={14} />
           <span style={{ flex: 1 }}>Search workspaces…</span>
           <kbd
+            className="topbar-kbd"
             style={{
               fontSize: 11,
               padding: "2px 6px",
@@ -146,7 +158,7 @@ export default function Topbar() {
 
         {/* Avatar */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ textAlign: "right" }}>
+          <div className="topbar-user-info" style={{ textAlign: "right" }}>
             <div
               style={{
                 fontSize: 13,
@@ -155,15 +167,15 @@ export default function Topbar() {
                 lineHeight: 1.2,
               }}
             >
-              Topaz Laurent
+              Topaz Curtis
             </div>
             <div style={{ fontSize: 11, color: "var(--ink-muted)" }}>
               Lead Planner
             </div>
           </div>
           <img
-            src="https://randomuser.me/api/portraits/women/79.jpg"
-            alt="Topaz Laurent"
+            src="/topaz-curtis.jpg"
+            alt="Topaz Curtis"
             style={{
               width: 34,
               height: 34,

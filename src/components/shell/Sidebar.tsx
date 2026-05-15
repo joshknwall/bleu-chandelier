@@ -43,21 +43,34 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Wrench,
 };
 
-export default function Sidebar() {
+export default function Sidebar({
+  mobileOpen,
+  onClose,
+}: {
+  mobileOpen?: boolean;
+  onClose?: () => void;
+}) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
   return (
-    <aside
-      className={cn("sidebar", collapsed && "collapsed")}
-      style={{
-        width: collapsed ? "var(--sidebar-cw)" : "var(--sidebar-w)",
-        height: "100vh",
-        position: "sticky",
-        top: 0,
-        flexShrink: 0,
-      }}
-    >
+    <>
+      {/* Mobile backdrop */}
+      <div
+        className={cn("sidebar-backdrop", mobileOpen && "visible")}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside
+        className={cn("sidebar", collapsed && "collapsed", mobileOpen && "mobile-open")}
+        style={{
+          width: collapsed ? "var(--sidebar-cw)" : "var(--sidebar-w)",
+          height: "100vh",
+          position: "sticky",
+          top: 0,
+          flexShrink: 0,
+        }}
+      >
       {/* Logo */}
       <div
         className="flex items-center gap-3 px-4 py-5 flex-shrink-0"
@@ -120,6 +133,7 @@ export default function Sidebar() {
               href={`/${ws.id}`}
               className={cn("nav-item", isActive && "active")}
               title={collapsed ? ws.label : undefined}
+              onClick={onClose}
             >
               {Icon && (
                 <Icon
@@ -173,5 +187,6 @@ export default function Sidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }

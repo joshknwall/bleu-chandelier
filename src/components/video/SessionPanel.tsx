@@ -54,7 +54,7 @@ export default function SessionPanel({ sessionId }: SessionPanelProps) {
         {active === "agenda" && <AgendaPanel sessionId={sessionId} />}
         {active === "decisions" && <DecisionsPanel sessionId={sessionId} />}
         {active === "approvals" && <ApprovalsPanel sessionId={sessionId} />}
-        {active === "floorplan" && <FloorPlanPanel />}
+        {active === "floorplan" && <FloorPlanPanel roomId={sessionId} />}
         {active === "tools" && <ToolsPanel />}
 
         {active === "notes" && <NotesPanel sessionId={sessionId} />}

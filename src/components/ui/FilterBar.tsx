@@ -39,15 +39,7 @@ export default function FilterBar({
   showClear,
 }: FilterBarProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        flexWrap: "wrap",
-        marginBottom: 16,
-      }}
-    >
+    <div className="filter-bar">
       {onSearchChange !== undefined && (
         <div
           style={{

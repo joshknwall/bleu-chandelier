@@ -150,9 +150,9 @@ export default function RoomsPage() {
   });
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 1200, margin: "0 auto" }}>
+    <div className="page-content">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+      <div className="page-header">
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
             <div
@@ -209,14 +209,11 @@ export default function RoomsPage() {
 
       {/* Tabs */}
       <div
+        className="tab-bar"
         style={{
-          display: "flex",
-          gap: 4,
           background: "rgba(255,255,255,0.5)",
           borderRadius: "999px",
           padding: 4,
-          width: "fit-content",
-          marginBottom: 28,
           backdropFilter: "blur(8px)",
         }}
       >
@@ -273,13 +270,7 @@ export default function RoomsPage() {
               </div>
             </div>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                gap: 20,
-              }}
-            >
+            <div className="card-grid">
               {filteredRooms.map(room => (
                 <RoomCard
                   key={room.id}
@@ -304,13 +295,7 @@ export default function RoomsPage() {
 
       {/* Templates tab */}
       {tab === "templates" && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-            gap: 20,
-          }}
-        >
+        <div className="card-grid">
           {ROOM_TEMPLATES.map(template => (
             <TemplateCard key={template.id} template={template} />
           ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Settings,
   User,
@@ -62,9 +62,9 @@ export default function SettingsPage() {
   const save = () => toast("Settings saved", { variant: "success" });
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 1000, margin: "0 auto" }}>
+    <div className="page-content" style={{ maxWidth: 1000 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+      <div className="page-header" style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
         <div
           style={{
             width: 36,
@@ -97,9 +97,9 @@ export default function SettingsPage() {
       </div>
 
       {/* Layout: sidebar tabs + content */}
-      <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 24 }}>
+      <div className="settings-layout">
         {/* Tab nav */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div className="settings-tabs" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -140,30 +140,71 @@ export default function SettingsPage() {
 }
 
 function ProfileTab({ onSave }: { onSave: () => void }) {
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("File must be under 2MB");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file (JPG, PNG)");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div style={cardStyle}>
       <h2 style={{ fontFamily: "var(--font-h)", fontSize: 18, fontWeight: 600, margin: "0 0 20px", color: "var(--ink)" }}>
         Profile
       </h2>
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-        <div
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, var(--gold), var(--navy))",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            fontSize: 24,
-            fontWeight: 700,
-          }}
-        >
-          TC
-        </div>
+        {avatarPreview ? (
+          <img
+            src={avatarPreview}
+            alt="Avatar preview"
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: "50%",
+              objectFit: "cover",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, var(--gold), var(--navy))",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              fontSize: 24,
+              fontWeight: 700,
+            }}
+          >
+            TC
+          </div>
+        )}
         <div>
-          <Button variant="secondary" size="sm">Upload Photo</Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            onChange={handleFileSelect}
+            style={{ display: "none" }}
+          />
+          <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
+            Upload Photo
+          </Button>
           <div style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 6 }}>
             JPG, PNG up to 2MB
           </div>

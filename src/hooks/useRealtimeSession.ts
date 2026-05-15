@@ -193,7 +193,7 @@ export function useSessionPresence(roomId: string) {
       {
         userId: "user-1",
         name: "You",
-        avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+        avatar: "/topaz-curtis.jpg",
         isActive: true,
         lastSeen: new Date(),
       },
